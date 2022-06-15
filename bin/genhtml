@@ -829,6 +829,38 @@ sub rename_functions($$)
 }
 
 #
+# remove_relative_path($dir_prefix)
+#
+# Remove the relative path substring of the absolute path, and generate the real
+# Example: remove_relative_path("/root/src/p1/p2/../../pt") -> "/root/src/pt"
+#
+sub remove_relative_path($)
+{
+	my $ori_dir_prefix = $_[0];
+	my @out_segments_prefix;
+	my @segments_prefix = split(//+/, $ori_dir_prefix);
+
+	my $relative_tar = 0;
+	for (my $i = $#segments_prefix - 1; $i >= 0; $i--) {
+		if ($segments_prefix[$i] eq "..") {
+			$relative_tar++;
+			continue;
+		}
+		if ($relative_tar == 0) {
+			push(@out_segments_prefix, $segments_prefix[$i]);
+		} else {
+			$relative_tar--;
+		}
+	}
+
+	if ($relative_tar != 0) {
+		return "/";
+	}
+
+	return reverse join("/", @out_segments_prefix);
+}
+
+#
 # gen_html()
 #
 # Generate a set of HTML pages from contents of .info file INFO_FILENAME.
@@ -915,6 +947,7 @@ sub gen_html()
 		for my $i (0 .. $#dir_prefix)
 		{
 				$dir_prefix[$i] =~ s/\/+$//;
+				$dir_prefix[$i] = remove_relative_path($dir_prefix[$i]);
 				$msg .= ", " unless 0 == $i;
 				$msg .= "\"" . $dir_prefix[$i] . "\"";
 		}
